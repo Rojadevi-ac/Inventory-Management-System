@@ -4,6 +4,17 @@ from config.db import get_connection
 from services.log_service import record_log
 
 
+def _format_dict(d):
+    if not d:
+        return d
+    for k, v in list(d.items()):
+        if isinstance(v, datetime) or hasattr(v, "isoformat"):
+            d[k] = v.isoformat()
+        elif hasattr(v, "as_tuple"):  # Decimal
+            d[k] = float(v)
+    return d
+
+
 def _generate_issue_number(cursor):
     year = datetime.now().year
     cursor.execute("SELECT COUNT(*) AS total FROM supplier_issues")
@@ -31,9 +42,11 @@ def get_purchases_by_supplier(supplier_id):
                    ORDER BY pu.purchase_date DESC""",
                 (supplier_id,),
             )
-            purchases = cursor.fetchall()
+            purchases = [_format_dict(p) for p in cursor.fetchall()]
             for p in purchases:
-                p["purchase_no"] = f"PUR-{p['purchase_id']:04d}"
+                p["purchase_no"] = f"PUR-{int(p['purchase_id']):04d}"
+                p["purchased_quantity"] = int(p["purchased_quantity"])
+                p["already_reported_damage"] = int(p["already_reported_damage"])
                 p["remaining_quantity"] = max(0, p["purchased_quantity"] - p["already_reported_damage"])
             return purchases
     finally:
@@ -61,8 +74,8 @@ def get_purchase_product_damage_summary(purchase_id, product_id):
             if not row:
                 return None, "Purchase or product not found"
             
-            purchased_qty = row["purchased_quantity"]
-            already_damaged = row["already_reported_damage"]
+            purchased_qty = int(row["purchased_quantity"])
+            already_damaged = int(row["already_reported_damage"])
             remaining_qty = max(0, purchased_qty - already_damaged)
 
             return {
@@ -103,8 +116,8 @@ def create_supplier_issue(supplier_id, purchase_id, product_id, quantity,
                    WHERE purchase_id = %s AND product_id = %s AND status != 'Rejected'""",
                 (purchase_id, product_id),
             )
-            reported = cursor.fetchone()["reported_qty"]
-            remaining = pur["purchased_qty"] - reported
+            reported = int(cursor.fetchone()["reported_qty"])
+            remaining = int(pur["purchased_qty"]) - reported
 
             if quantity > remaining:
                 return None, f"Damage quantity exceeds the remaining quantity for this purchase. Remaining available: {remaining} units."
@@ -129,7 +142,7 @@ def create_supplier_issue(supplier_id, purchase_id, product_id, quantity,
                     (product_id,),
                 )
                 inv = cursor.fetchone()
-                prev_stock = inv["quantity"] if inv else 0
+                prev_stock = int(inv["quantity"]) if inv else 0
                 new_stock = max(0, prev_stock - quantity)
 
                 cursor.execute(
@@ -216,7 +229,7 @@ def update_supplier_issue_status(issue_id, status, resolution=None, notes=None, 
             # Record audit log
             cursor.execute("SELECT quantity FROM inventory WHERE product_id = %s", (issue["product_id"],))
             inv = cursor.fetchone()
-            stock_now = inv["quantity"] if inv else 0
+            stock_now = int(inv["quantity"]) if inv else 0
             resol_txt = f" (Resolution: {new_resolution})" if new_resolution else ""
 
             record_log(
@@ -289,7 +302,7 @@ def get_supplier_issues(search=None, supplier_id=None, purchase_id=None, product
                     {where}""",
                 params,
             )
-            total = cursor.fetchone()["total"]
+            total = int(cursor.fetchone()["total"])
 
             cursor.execute(
                 f"""SELECT si.*,
@@ -309,9 +322,9 @@ def get_supplier_issues(search=None, supplier_id=None, purchase_id=None, product
                     LIMIT %s OFFSET %s""",
                 params + [per_page, offset],
             )
-            issues = cursor.fetchall()
+            issues = [_format_dict(row) for row in cursor.fetchall()]
             for row in issues:
-                row["purchase_no"] = f"PUR-{row['purchase_id']:04d}"
+                row["purchase_no"] = f"PUR-{int(row['purchase_id']):04d}"
             return issues, total, None
     except Exception as e:
         return [], 0, str(e)
@@ -328,7 +341,7 @@ def get_supplier_quality_summary(supplier_id):
         with conn.cursor() as cursor:
             # 1. Total purchases
             cursor.execute("SELECT COUNT(*) AS c FROM purchases WHERE supplier_id = %s", (supplier_id,))
-            total_purchases = cursor.fetchone()["c"]
+            total_purchases = int(cursor.fetchone()["c"])
 
             # 2. Issues summary
             cursor.execute(
@@ -355,13 +368,13 @@ def get_supplier_quality_summary(supplier_id):
                    LIMIT 10""",
                 (supplier_id,),
             )
-            recent_issues = cursor.fetchall()
+            recent_issues = [_format_dict(r) for r in cursor.fetchall()]
             for r in recent_issues:
-                r["purchase_no"] = f"PUR-{r['purchase_id']:04d}"
+                r["purchase_no"] = f"PUR-{int(r['purchase_id']):04d}"
 
             return {
                 "total_purchases": total_purchases,
-                "total_issues": summary["total_issues"],
+                "total_issues": int(summary["total_issues"]),
                 "damaged_quantity": int(summary["damaged_qty"]),
                 "defective_quantity": int(summary["defective_qty"]),
                 "returned_quantity": int(summary["returned_qty"]),

@@ -2,6 +2,22 @@ from config.db import get_connection
 from services.log_service import record_log
 
 
+def _format_purchase(pu):
+    if not pu:
+        return pu
+    if pu.get("quantity") is not None:
+        pu["quantity"] = int(pu["quantity"])
+    if pu.get("purchase_date") and hasattr(pu["purchase_date"], "isoformat"):
+        pu["purchase_date"] = pu["purchase_date"].isoformat()
+    elif pu.get("purchase_date"):
+        pu["purchase_date"] = str(pu["purchase_date"])
+    if pu.get("created_at") and hasattr(pu["created_at"], "isoformat"):
+        pu["created_at"] = pu["created_at"].isoformat()
+    elif pu.get("created_at"):
+        pu["created_at"] = str(pu["created_at"])
+    return pu
+
+
 def _log_transaction(cursor, product_id, txn_type, quantity, reference_id=None):
     cursor.execute(
         """INSERT INTO transactions (product_id, type, quantity, reference_id)
@@ -97,17 +113,17 @@ def get_purchases(search=None, date_from=None, date_to=None, page=1, per_page=10
             offset = (page - 1) * per_page
 
             cursor.execute(f"SELECT COUNT(*) AS total FROM purchases pu "
-                           f"JOIN products p ON pu.product_id = p.id "
+                           f"LEFT JOIN products p ON pu.product_id = p.id "
                            f"LEFT JOIN suppliers s ON pu.supplier_id = s.id "
                            f"{where}", params)
-            total = cursor.fetchone()["total"]
+            total = int(cursor.fetchone()["total"])
 
             cursor.execute(
                 f"""SELECT pu.*, p.name AS product_name, p.sku,
                            u.name AS created_by_name,
                            s.name AS supplier_name
                     FROM purchases pu
-                    JOIN products p ON pu.product_id = p.id
+                    LEFT JOIN products p ON pu.product_id = p.id
                     LEFT JOIN users u ON pu.created_by = u.id
                     LEFT JOIN suppliers s ON pu.supplier_id = s.id
                     {where}
@@ -115,7 +131,7 @@ def get_purchases(search=None, date_from=None, date_to=None, page=1, per_page=10
                     LIMIT %s OFFSET %s""",
                 params + [per_page, offset],
             )
-            purchases = cursor.fetchall()
+            purchases = [_format_purchase(pu) for pu in cursor.fetchall()]
             return purchases, total, None
     finally:
         conn.close()

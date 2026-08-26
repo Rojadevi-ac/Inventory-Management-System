@@ -1,4 +1,16 @@
+from datetime import datetime, date
 from config.db import get_connection
+
+
+def _format_supplier(s):
+    if not s:
+        return s
+    for k, v in list(s.items()):
+        if isinstance(v, (datetime, date)) or hasattr(v, "isoformat"):
+            s[k] = v.isoformat()
+        elif hasattr(v, "as_tuple"):
+            s[k] = float(v)
+    return s
 
 
 def get_suppliers(search=None, page=1, per_page=50):
@@ -17,7 +29,7 @@ def get_suppliers(search=None, page=1, per_page=50):
             offset = (page - 1) * per_page
 
             cursor.execute(f"SELECT COUNT(*) AS total FROM suppliers s {where}", params)
-            total = cursor.fetchone()["total"]
+            total = int(cursor.fetchone()["total"])
 
             cursor.execute(
                 f"""SELECT * FROM suppliers s {where}
@@ -25,7 +37,7 @@ def get_suppliers(search=None, page=1, per_page=50):
                     LIMIT %s OFFSET %s""",
                 params + [per_page, offset],
             )
-            suppliers = cursor.fetchall()
+            suppliers = [_format_supplier(s) for s in cursor.fetchall()]
             return suppliers, total, None
     except Exception as e:
         return [], 0, str(e)
@@ -38,7 +50,7 @@ def get_supplier_by_id(supplier_id):
     try:
         with conn.cursor() as cursor:
             cursor.execute("SELECT * FROM suppliers WHERE id = %s", (supplier_id,))
-            return cursor.fetchone()
+            return _format_supplier(cursor.fetchone())
     finally:
         conn.close()
 

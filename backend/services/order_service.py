@@ -2,6 +2,22 @@ from config.db import get_connection
 from services.log_service import record_log
 
 
+def _format_order(o):
+    if not o:
+        return o
+    if o.get("quantity") is not None:
+        o["quantity"] = int(o["quantity"])
+    if o.get("order_date") and hasattr(o["order_date"], "isoformat"):
+        o["order_date"] = o["order_date"].isoformat()
+    elif o.get("order_date"):
+        o["order_date"] = str(o["order_date"])
+    if o.get("created_at") and hasattr(o["created_at"], "isoformat"):
+        o["created_at"] = o["created_at"].isoformat()
+    elif o.get("created_at"):
+        o["created_at"] = str(o["created_at"])
+    return o
+
+
 def _log_transaction(cursor, product_id, txn_type, quantity, reference_id=None):
     cursor.execute(
         """INSERT INTO transactions (product_id, type, quantity, reference_id)
@@ -89,19 +105,19 @@ def get_orders(date_from=None, date_to=None, page=1, per_page=10):
             offset = (page - 1) * per_page
 
             cursor.execute(f"SELECT COUNT(*) AS total FROM orders o {where}", params)
-            total = cursor.fetchone()["total"]
+            total = int(cursor.fetchone()["total"])
 
             cursor.execute(
                 f"""SELECT o.*, p.name AS product_name, p.sku, u.name AS created_by_name
                     FROM orders o
-                    JOIN products p ON o.product_id = p.id
+                    LEFT JOIN products p ON o.product_id = p.id
                     LEFT JOIN users u ON o.created_by = u.id
                     {where}
                     ORDER BY o.order_date DESC
                     LIMIT %s OFFSET %s""",
                 params + [per_page, offset],
             )
-            orders = cursor.fetchall()
+            orders = [_format_order(o) for o in cursor.fetchall()]
             return orders, total, None
     finally:
         conn.close()
