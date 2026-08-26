@@ -14,19 +14,7 @@ staff_bp.add_url_rule(
     strict_slashes=False,
 )
 staff_bp.add_url_rule(
-    "/",
-    view_func=token_required(roles=["admin", "manager"])(list_users),
-    methods=["GET"],
-    strict_slashes=False,
-)
-staff_bp.add_url_rule(
     "",
-    view_func=token_required(roles=["admin", "manager"])(create_staff),
-    methods=["POST"],
-    strict_slashes=False,
-)
-staff_bp.add_url_rule(
-    "/",
     view_func=token_required(roles=["admin", "manager"])(create_staff),
     methods=["POST"],
     strict_slashes=False,

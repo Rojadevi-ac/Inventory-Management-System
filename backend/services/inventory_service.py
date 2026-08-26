@@ -1,6 +1,26 @@
 from config.db import get_connection
 
 
+def _format_item(item):
+    if not item:
+        return item
+    if item.get("price") is not None:
+        item["price"] = float(item["price"])
+    if item.get("quantity") is not None:
+        item["quantity"] = int(item["quantity"])
+    if item.get("reorder_level") is not None:
+        item["reorder_level"] = int(item["reorder_level"])
+    if item.get("last_updated") and hasattr(item["last_updated"], "isoformat"):
+        item["last_updated"] = item["last_updated"].isoformat()
+    elif item.get("last_updated"):
+        item["last_updated"] = str(item["last_updated"])
+    if item.get("updated_at") and hasattr(item["updated_at"], "isoformat"):
+        item["updated_at"] = item["updated_at"].isoformat()
+    elif item.get("updated_at"):
+        item["updated_at"] = str(item["updated_at"])
+    return item
+
+
 def get_inventory(stock_status=None, search=None, page=1, per_page=10):
     conn = get_connection()
     try:
@@ -25,7 +45,7 @@ def get_inventory(stock_status=None, search=None, page=1, per_page=10):
                     JOIN products p ON i.product_id = p.id {where}""",
                 params,
             )
-            total = cursor.fetchone()["total"]
+            total = int(cursor.fetchone()["total"])
 
             cursor.execute(
                 f"""SELECT i.*, p.name, p.sku, p.category, p.size, p.price,
@@ -37,7 +57,7 @@ def get_inventory(stock_status=None, search=None, page=1, per_page=10):
                     LIMIT %s OFFSET %s""",
                 params + [per_page, offset],
             )
-            items = cursor.fetchall()
+            items = [_format_item(item) for item in cursor.fetchall()]
             return items, total, None
     finally:
         conn.close()

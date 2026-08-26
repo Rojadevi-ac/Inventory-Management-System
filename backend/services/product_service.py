@@ -3,6 +3,26 @@ from models.product_model import generate_sku, sku_exists
 from services.log_service import record_log
 
 
+def _format_product(p):
+    if not p:
+        return p
+    if p.get("price") is not None:
+        p["price"] = float(p["price"])
+    if p.get("quantity") is not None:
+        p["quantity"] = int(p["quantity"])
+    if p.get("reorder_level") is not None:
+        p["reorder_level"] = int(p["reorder_level"])
+    if p.get("created_at") and hasattr(p["created_at"], "isoformat"):
+        p["created_at"] = p["created_at"].isoformat()
+    elif p.get("created_at"):
+        p["created_at"] = str(p["created_at"])
+    if p.get("updated_at") and hasattr(p["updated_at"], "isoformat"):
+        p["updated_at"] = p["updated_at"].isoformat()
+    elif p.get("updated_at"):
+        p["updated_at"] = str(p["updated_at"])
+    return p
+
+
 def _ensure_unique_sku(cursor, category, name, size, preferred_sku=None):
     if preferred_sku:
         if not sku_exists(cursor, preferred_sku):
@@ -219,7 +239,7 @@ def get_products(search=None, category=None, page=1, per_page=10,
 
             cursor.execute(
                 f"SELECT COUNT(*) AS total FROM products p {where}", params)
-            total = cursor.fetchone()["total"]
+            total = int(cursor.fetchone()["total"])
 
             cursor.execute(
                 f"""SELECT p.*, i.quantity, i.reorder_level,
@@ -231,7 +251,7 @@ def get_products(search=None, category=None, page=1, per_page=10,
                     LIMIT %s OFFSET %s""",
                 params + [per_page, offset],
             )
-            products = cursor.fetchall()
+            products = [_format_product(p) for p in cursor.fetchall()]
             return products, total, None
     finally:
         conn.close()
@@ -248,7 +268,7 @@ def get_product_by_id(product_id):
                    WHERE p.id = %s""",
                 (product_id,),
             )
-            return cursor.fetchone()
+            return _format_product(cursor.fetchone())
     finally:
         conn.close()
 
