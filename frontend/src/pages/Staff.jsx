@@ -13,11 +13,13 @@ import { staffAPI } from '../services/api'
 import { exportToExcel } from '../utils/excelExport'
 import { formatDateTime } from '../utils/formatDate'
 import { useAuth } from '../hooks/useAuth'
+import { useLanguage } from '../context/LanguageContext'
 
 const EMPTY_FORM = { name: '', email: '', password: '', role: 'staff', avatar_url: '' }
 
 export default function Staff() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const currentRole = user?.role
   const isAdmin = currentRole === 'admin'
 
@@ -190,7 +192,7 @@ export default function Staff() {
       <div className="glass-card overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] w-full mt-2 border border-slate-200 dark:border-white/10 rounded-2xl">
         {loading ? (
           <div className="flex justify-center py-16">
-            <LoadingSpinner size="lg" text="Loading staff accounts…" />
+            <LoadingSpinner module="staff" size="lg" text={t('loadingModule', 'Loading staff members…')} />
           </div>
         ) : filteredUsers.length === 0 ? (
           <EmptyState

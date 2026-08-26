@@ -15,8 +15,10 @@ import ProductDetailModal from '../components/ProductDetailModal'
 import { inventoryAPI } from '../services/api'
 import { exportToExcel } from '../utils/excelExport'
 import { formatDateTime } from '../utils/formatDate'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function Inventory() {
+  const { t } = useLanguage()
   const [searchParams] = useSearchParams()
   const initialStock = searchParams.get('status') || searchParams.get('stock') || ''
 
@@ -167,27 +169,27 @@ export default function Inventory() {
       <div className="glass-card overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] w-full mt-2 border border-slate-200 dark:border-white/10 rounded-2xl">
         {loading ? (
           <div className="flex justify-center py-16">
-            <LoadingSpinner size="lg" text="Loading inventory…" />
+            <LoadingSpinner module="inventory" size="lg" text={t('loading', 'Syncing live stock inventory…')} />
           </div>
         ) : items.length === 0 ? (
           <EmptyState
             icon={MdStore}
-            title="No inventory records"
+            title={t('noInventory', 'No inventory records')}
             subtitle={search || stockFilter ? 'Try adjusting your filters' : 'Add products first to view inventory'}
           />
         ) : (
           <table className="data-table min-w-[850px]">
             <thead>
               <tr>
-                <th>Product</th>
-                <th>SKU</th>
-                <th>Category</th>
-                <th>Quantity</th>
-                <th>Qty on Hand</th>
-                <th>Reorder Level</th>
-                <th>Stock Status</th>
-                <th>Last Updated</th>
-                <th className="text-right">History</th>
+                <th>{t('productName', 'Product')}</th>
+                <th>{t('sku', 'SKU')}</th>
+                <th>{t('categoryName', 'Category')}</th>
+                <th>{t('quantity', 'Quantity')}</th>
+                <th>{t('stockOnHand', 'Qty on Hand')}</th>
+                <th>{t('reorderLevel', 'Reorder Level')}</th>
+                <th>{t('status', 'Stock Status')}</th>
+                <th>{t('lastUpdated', 'Last Updated')}</th>
+                <th className="text-right">{t('history', 'History')}</th>
               </tr>
             </thead>
             <tbody>

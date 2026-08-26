@@ -5,6 +5,7 @@ import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import './index.css'
 
+import { LanguageProvider } from './context/LanguageContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -28,45 +29,45 @@ if (savedTheme === 'dark') {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <Routes>
-        {/* Public routes */}
-        <Route path="/login" element={<Login />} />
+    <LanguageProvider>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <Routes>
+          {/* Public routes — ONLY LOGIN */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Navigate to="/login" replace />} />
 
-        {/* Protected routes — all authenticated users */}
-        <Route path="/dashboard"         element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/products"          element={<ProtectedRoute><Products /></ProtectedRoute>} />
-        <Route path="/categories"        element={<ProtectedRoute><Categories /></ProtectedRoute>} />
-        <Route path="/archived-products" element={<ProtectedRoute><ArchivedProducts /></ProtectedRoute>} />
-        <Route path="/inventory"         element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
-        <Route path="/purchases"         element={<ProtectedRoute><Purchases /></ProtectedRoute>} />
-        <Route path="/orders"            element={<ProtectedRoute><Orders /></ProtectedRoute>} />
-        <Route path="/supplier-issues"   element={<ProtectedRoute><SupplierIssues /></ProtectedRoute>} />
-        <Route path="/damages"           element={<Navigate to="/supplier-issues" replace />} />
-        <Route path="/suppliers"         element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
+          {/* Protected routes — all authenticated users */}
+          <Route path="/dashboard"         element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/products"          element={<ProtectedRoute><Products /></ProtectedRoute>} />
+          <Route path="/categories"        element={<ProtectedRoute><Categories /></ProtectedRoute>} />
+          <Route path="/archived-products" element={<ProtectedRoute><ArchivedProducts /></ProtectedRoute>} />
+          <Route path="/inventory"         element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
+          <Route path="/purchases"         element={<ProtectedRoute><Purchases /></ProtectedRoute>} />
+          <Route path="/orders"            element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+          <Route path="/supplier-issues"   element={<ProtectedRoute><SupplierIssues /></ProtectedRoute>} />
+          <Route path="/damages"           element={<Navigate to="/supplier-issues" replace />} />
+          <Route path="/suppliers"         element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
 
-        {/* Admin + Manager only */}
-        <Route path="/staff"             element={<ProtectedRoute roles={['admin', 'manager']}><Staff /></ProtectedRoute>} />
+          {/* Admin + Manager only */}
+          <Route path="/staff"             element={<ProtectedRoute roles={['admin', 'manager']}><Staff /></ProtectedRoute>} />
 
-        {/* Signup redirect to login */}
-        <Route path="/signup"            element={<Navigate to="/login" replace />} />
+          {/* Catch-all */}
+          <Route path="*"                  element={<Navigate to="/dashboard" replace />} />
+        </Routes>
 
-        {/* Catch-all */}
-        <Route path="*"                  element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-
-      {/* Centered Toast Notifications */}
-      <ToastContainer
-        position="top-center"
-        autoClose={2500}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
-    </BrowserRouter>
+        {/* Centered Toast Notifications */}
+        <ToastContainer
+          position="top-center"
+          autoClose={2500}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+        />
+      </BrowserRouter>
+    </LanguageProvider>
   </React.StrictMode>
 )

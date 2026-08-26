@@ -2,7 +2,8 @@ import bcrypt
 
 
 def hash_password(password):
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    # Use rounds=10 for high security + fast hashing execution (~30ms)
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds=10)).decode("utf-8")
 
 
 def verify_password(password, hashed):

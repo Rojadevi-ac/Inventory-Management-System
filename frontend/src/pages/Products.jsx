@@ -15,6 +15,7 @@ import ProductDetailModal from '../components/ProductDetailModal'
 import { productsAPI, categoriesAPI } from '../services/api'
 import { exportToExcel } from '../utils/excelExport'
 import { useAuth } from '../hooks/useAuth'
+import { useLanguage } from '../context/LanguageContext'
 
 const EMPTY_FORM = {
   name: '',
@@ -29,6 +30,7 @@ const EMPTY_FORM = {
 
 export default function Products() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const isAdmin = user?.role === 'admin'
   const isManager = user?.role === 'manager'
   const canModify = isAdmin || isManager
@@ -273,26 +275,26 @@ export default function Products() {
       <div className="glass-card overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] w-full mt-2 border border-slate-200 dark:border-white/10 rounded-2xl">
         {loading ? (
           <div className="flex justify-center py-16">
-            <LoadingSpinner size="lg" text="Loading products…" />
+            <LoadingSpinner module="products" size="lg" text={t('loading', 'Loading products…')} />
           </div>
         ) : products.length === 0 ? (
           <EmptyState
             icon={MdInventory}
-            title="No products found"
+            title={t('noProducts', 'No products found')}
             subtitle={search || category ? 'Try adjusting your search filters' : 'Add your first product using the button above'}
           />
         ) : (
           <table className="data-table min-w-[850px]">
             <thead>
               <tr>
-                <th>Product</th>
-                <th>Category</th>
-                <th>Quantity</th>
-                <th>Price</th>
-                <th>SKU</th>
-                <th>Stock on Hand</th>
-                <th>Stock Status</th>
-                <th className="text-right">Actions</th>
+                <th>{t('productName', 'Product')}</th>
+                <th>{t('categoryName', 'Category')}</th>
+                <th>{t('quantity', 'Quantity')}</th>
+                <th>{t('price', 'Price')}</th>
+                <th>{t('sku', 'SKU')}</th>
+                <th>{t('stockOnHand', 'Stock on Hand')}</th>
+                <th>{t('status', 'Stock Status')}</th>
+                <th className="text-right">{t('actions', 'Actions')}</th>
               </tr>
             </thead>
             <tbody>

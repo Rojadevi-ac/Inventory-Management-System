@@ -11,10 +11,12 @@ import Pagination from '../components/Pagination'
 import { ordersAPI, productsAPI } from '../services/api'
 import { exportToExcel } from '../utils/excelExport'
 import { formatDateTime } from '../utils/formatDate'
+import { useLanguage } from '../context/LanguageContext'
 
 const EMPTY_FORM = { product_id: '', quantity: '' }
 
 export default function Orders() {
+  const { t } = useLanguage()
   const [orders, setOrders] = useState([])
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
@@ -200,7 +202,7 @@ export default function Orders() {
       <div className="glass-card overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] w-full mt-2 border border-slate-200 dark:border-white/10 rounded-2xl">
         {loading ? (
           <div className="flex justify-center py-16">
-            <LoadingSpinner size="lg" text="Loading orders…" />
+            <LoadingSpinner module="orders" size="lg" text={t('loadingModule', 'Loading customer orders…')} />
           </div>
         ) : orders.length === 0 ? (
           <EmptyState

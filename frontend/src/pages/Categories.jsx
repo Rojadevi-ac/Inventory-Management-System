@@ -12,11 +12,13 @@ import { categoriesAPI } from '../services/api'
 import { exportToExcel } from '../utils/excelExport'
 import { formatDateTime } from '../utils/formatDate'
 import { useAuth } from '../hooks/useAuth'
+import { useLanguage } from '../context/LanguageContext'
 
 const EMPTY_FORM = { name: '', description: '', status: 'active' }
 
 export default function Categories() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const isAdmin = user?.role === 'admin'
   const isManager = user?.role === 'manager'
   const canModify = isAdmin || isManager
@@ -212,7 +214,7 @@ export default function Categories() {
       <div className="glass-card overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] w-full mt-2 border border-slate-200 dark:border-white/10 rounded-2xl">
         {loading ? (
           <div className="flex justify-center py-16">
-            <LoadingSpinner size="lg" text="Loading categories…" />
+            <LoadingSpinner module="categories" size="lg" text={t('loadingModule', 'Loading categories…')} />
           </div>
         ) : categories.length === 0 ? (
           <EmptyState

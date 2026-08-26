@@ -1,7 +1,7 @@
 from flask import Blueprint
 
 from controllers.auth_controller import (
-    create_staff, edit_user, list_users, login, profile, remove_user,
+    create_staff, edit_user, list_users, login, profile, register, remove_user,
 )
 from utils.jwt_helper import token_required
 
@@ -9,6 +9,8 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
 # Public
 auth_bp.add_url_rule("/login", view_func=login, methods=["POST"])
+auth_bp.add_url_rule("/register", view_func=register, methods=["POST"])
+auth_bp.add_url_rule("/signup", view_func=register, methods=["POST"])
 
 # Authenticated
 auth_bp.add_url_rule("/profile", view_func=token_required()(profile), methods=["GET"])

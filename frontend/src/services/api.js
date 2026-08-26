@@ -2,6 +2,7 @@ import axios from 'axios'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -37,35 +38,53 @@ api.interceptors.response.use(
   }
 )
 
+// In-memory cache for fast dropdown lookups
+const cache = new Map()
+const CACHE_TTL = 15000 // 15 seconds
+
+async function cachedGet(url, params = {}) {
+  const cacheKey = `${url}?${JSON.stringify(params)}`
+  const cached = cache.get(cacheKey)
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data
+  }
+  const response = await api.get(url, { params })
+  cache.set(cacheKey, { timestamp: Date.now(), data: response })
+  return response
+}
+
+export function clearAPICache() {
+  cache.clear()
+}
+
 // ── Auth ─────────────────────────────────────────────────────────────────────
 export const authAPI = {
   login: (data) => api.post('/auth/login', data),
+
+  register: (data) => api.post('/auth/register', data),
 
   profile: () => api.get('/auth/profile'),
 }
 
 // ── Staff Management ─────────────────────────────────────────────────────────
 export const staffAPI = {
-  list: () => api.get('/auth/users'),
+  list: () =>
+    api.get('/staff').catch((err) => (err.response?.status === 404 ? api.get('/auth/users') : Promise.reject(err))),
 
-  create: (data) => api.post('/auth/users', data),
+  create: (data) => {
+    clearAPICache()
+    return api.post('/staff', data).catch((err) => (err.response?.status === 404 ? api.post('/auth/users', data) : Promise.reject(err)))
+  },
 
-  update: (id, data) => api.put(`/auth/users/${id}`, data),
+  update: (id, data) => {
+    clearAPICache()
+    return api.put(`/staff/${id}`, data).catch((err) => (err.response?.status === 404 ? api.put(`/auth/users/${id}`, data) : Promise.reject(err)))
+  },
 
-  delete: (id) => api.delete(`/auth/users/${id}`),
-}
-
-// ── Categories ───────────────────────────────────────────────────────────────
-export const categoriesAPI = {
-  list: (params) => api.get('/categories', { params }),
-
-  active: () => api.get('/categories/active'),
-
-  create: (data) => api.post('/categories', data),
-
-  update: (id, data) => api.put(`/categories/${id}`, data),
-
-  delete: (id) => api.delete(`/categories/${id}`),
+  delete: (id) => {
+    clearAPICache()
+    return api.delete(`/staff/${id}`).catch((err) => (err.response?.status === 404 ? api.delete(`/auth/users/${id}`) : Promise.reject(err)))
+  },
 }
 
 // ── Products ─────────────────────────────────────────────────────────────────
@@ -74,15 +93,30 @@ export const productsAPI = {
 
   get: (id) => api.get(`/products/${id}`),
 
-  create: (data) => api.post('/products', data),
+  create: (data) => { clearAPICache(); return api.post('/products', data) },
 
-  update: (id, data) => api.put(`/products/${id}`, data),
+  update: (id, data) => { clearAPICache(); return api.put(`/products/${id}`, data) },
 
-  delete: (id) => api.delete(`/products/${id}`),
+  delete: (id) => { clearAPICache(); return api.delete(`/products/${id}`) },
 
-  restore: (id) => api.put(`/products/${id}/restore`),
+  restore: (id) => { clearAPICache(); return api.post(`/products/${id}/restore`) },
 
-  categories: () => api.get('/products/categories'),
+  archived: (params) => api.get('/products/archived', { params }),
+}
+
+// ── Categories ───────────────────────────────────────────────────────────────
+export const categoriesAPI = {
+  list: (params) => api.get('/categories', { params }),
+
+  getActive: () => cachedGet('/categories/active'),
+
+  active: () => cachedGet('/categories/active'),
+
+  create: (data) => { clearAPICache(); return api.post('/categories', data) },
+
+  update: (id, data) => { clearAPICache(); return api.put(`/categories/${id}`, data) },
+
+  delete: (id) => { clearAPICache(); return api.delete(`/categories/${id}`) },
 }
 
 // ── Inventory ─────────────────────────────────────────────────────────────────
@@ -99,14 +133,14 @@ export const inventoryAPI = {
 export const purchasesAPI = {
   list: (params) => api.get('/purchases', { params }),
 
-  create: (data) => api.post('/purchases', data),
+  create: (data) => { clearAPICache(); return api.post('/purchases', data) },
 }
 
 // ── Orders ───────────────────────────────────────────────────────────────────
 export const ordersAPI = {
   list: (params) => api.get('/orders', { params }),
 
-  create: (data) => api.post('/orders', data),
+  create: (data) => { clearAPICache(); return api.post('/orders', data) },
 }
 
 // ── Dashboard ────────────────────────────────────────────────────────────────
@@ -119,15 +153,15 @@ export const dashboardAPI = {
 
 // ── Suppliers ─────────────────────────────────────────────────────────────────
 export const suppliersAPI = {
-  list: (params) => api.get('/suppliers', { params }),
+  list: (params) => cachedGet('/suppliers', params),
 
   get: (id) => api.get(`/suppliers/${id}`),
 
-  create: (data) => api.post('/suppliers', data),
+  create: (data) => { clearAPICache(); return api.post('/suppliers', data) },
 
-  update: (id, data) => api.put(`/suppliers/${id}`, data),
+  update: (id, data) => { clearAPICache(); return api.put(`/suppliers/${id}`, data) },
 
-  delete: (id) => api.delete(`/suppliers/${id}`),
+  delete: (id) => { clearAPICache(); return api.delete(`/suppliers/${id}`) },
 }
 
 // ── Audit Logs History ────────────────────────────────────────────────────────
@@ -142,13 +176,13 @@ export const logsAPI = {
 export const supplierIssuesAPI = {
   list: (params) => api.get('/supplier-issues', { params }),
 
-  create: (data) => api.post('/supplier-issues', data),
+  create: (data) => { clearAPICache(); return api.post('/supplier-issues', data) },
 
   updateStatus: (id, data) =>
-    api.put(`/supplier-issues/${id}/status`, data),
+    { clearAPICache(); return api.put(`/supplier-issues/${id}/status`, data) },
 
   getPurchases: (supplierId) =>
-    api.get(`/supplier-issues/supplier/${supplierId}/purchases`),
+    cachedGet(`/supplier-issues/supplier/${supplierId}/purchases`),
 
   getDamageSummary: (purchaseId, productId) =>
     api.get('/supplier-issues/damage-summary', {
@@ -159,7 +193,5 @@ export const supplierIssuesAPI = {
     }),
 
   getQualitySummary: (supplierId) =>
-    api.get(`/supplier-issues/supplier/${supplierId}/quality`),
+    cachedGet(`/supplier-issues/supplier/${supplierId}/quality`),
 }
-
-export default api

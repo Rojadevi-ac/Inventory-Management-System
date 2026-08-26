@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
+import FlaticonAnimatedIcon from './FlaticonAnimatedIcon'
 
-export default function StatCard({ title, value, subtitle, icon: Icon, color = 'indigo', onClick, to }) {
+export default function StatCard({ title, value, subtitle, icon: Icon, module, color = 'indigo', onClick, to }) {
   const navigate = useNavigate()
   const colorMap = {
     indigo:  { bg: 'from-indigo-600/20 to-purple-600/20', icon: 'bg-indigo-600/30 text-indigo-400', border: 'border-indigo-500/20', text: 'text-indigo-400' },
@@ -47,11 +48,15 @@ export default function StatCard({ title, value, subtitle, icon: Icon, color = '
             <p className={`text-xs mt-1.5 font-medium ${c.text}`}>{subtitle}</p>
           )}
         </div>
-        {Icon && (
+        {module ? (
+          <div className="w-14 h-14 rounded-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-md p-2 flex items-center justify-center flex-shrink-0 shadow-lg border border-slate-200/60 dark:border-white/10 group-hover:scale-110 transition-transform">
+            <FlaticonAnimatedIcon module={module} size={36} />
+          </div>
+        ) : Icon ? (
           <div className={`w-12 h-12 rounded-2xl ${c.icon} flex items-center justify-center flex-shrink-0 shadow-lg`}>
             <Icon size={24} />
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   )

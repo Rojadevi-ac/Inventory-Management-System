@@ -66,7 +66,8 @@ def get_low_stock_count():
             cursor.execute(
                 "SELECT COUNT(*) AS count FROM inventory WHERE quantity < reorder_level"
             )
-            return cursor.fetchone()["count"]
+            res = cursor.fetchone()
+            return int(res["count"]) if res and res.get("count") is not None else 0
     finally:
         conn.close()
 
@@ -76,6 +77,7 @@ def get_total_stock():
     try:
         with conn.cursor() as cursor:
             cursor.execute("SELECT COALESCE(SUM(quantity), 0) AS total FROM inventory")
-            return cursor.fetchone()["total"]
+            res = cursor.fetchone()
+            return int(res["total"]) if res and res.get("total") is not None else 0
     finally:
         conn.close()

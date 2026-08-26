@@ -11,10 +11,12 @@ import Pagination from '../components/Pagination'
 import { purchasesAPI, productsAPI, suppliersAPI } from '../services/api'
 import { exportToExcel } from '../utils/excelExport'
 import { formatDateTime } from '../utils/formatDate'
+import { useLanguage } from '../context/LanguageContext'
 
 const EMPTY_FORM = { product_id: '', quantity: '', supplier_id: '' }
 
 export default function Purchases() {
+  const { t } = useLanguage()
   const [purchases, setPurchases] = useState([])
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
@@ -230,7 +232,7 @@ export default function Purchases() {
       <div className="glass-card overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] w-full mt-2 border border-slate-200 dark:border-white/10 rounded-2xl">
         {loading ? (
           <div className="flex justify-center py-16">
-            <LoadingSpinner size="lg" text="Loading purchases…" />
+            <LoadingSpinner module="purchases" size="lg" text={t('loadingModule', 'Loading inbound purchases…')} />
           </div>
         ) : purchases.length === 0 ? (
           <EmptyState

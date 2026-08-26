@@ -15,6 +15,7 @@ import { suppliersAPI, supplierIssuesAPI } from '../services/api'
 import { exportToExcel } from '../utils/excelExport'
 import { formatDate, formatDateTime } from '../utils/formatDate'
 import { useAuth } from '../hooks/useAuth'
+import { useLanguage } from '../context/LanguageContext'
 
 const EMPTY_FORM = {
   name: '',
@@ -28,6 +29,7 @@ const EMPTY_FORM = {
 
 export default function Suppliers() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const isAdmin = user?.role === 'admin'
 
   const [suppliers, setSuppliers] = useState([])
@@ -231,7 +233,7 @@ export default function Suppliers() {
       <div className="glass-card overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] w-full mt-2 border border-slate-200 dark:border-white/10 rounded-2xl">
         {loading ? (
           <div className="flex justify-center py-16">
-            <LoadingSpinner size="lg" text="Loading suppliers…" />
+            <LoadingSpinner module="suppliers" size="lg" text={t('loadingModule', 'Loading supplier directory…')} />
           </div>
         ) : suppliers.length === 0 ? (
           <EmptyState

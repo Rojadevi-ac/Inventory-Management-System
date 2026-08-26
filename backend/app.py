@@ -16,6 +16,7 @@ from routes.supplier_routes import supplier_bp
 from routes.category_routes import category_bp
 from routes.log_routes import log_bp
 from routes.supplier_issue_routes import supplier_issue_bp
+from routes.staff_routes import staff_bp
 
 
 def create_app():
@@ -34,6 +35,7 @@ def create_app():
     app.register_blueprint(category_bp)
     app.register_blueprint(log_bp)
     app.register_blueprint(supplier_issue_bp)
+    app.register_blueprint(staff_bp)
 
     # Health check
     @app.route("/api/health", methods=["GET"])

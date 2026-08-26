@@ -23,6 +23,30 @@ def login():
     return jsonify({"token": token, "user": user}), 200
 
 
+def register():
+    data = request.get_json() or {}
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+    role = data.get("role", "staff")
+    avatar_url = (data.get("avatar_url") or "").strip() or None
+
+    if not name or not email or not password:
+        return jsonify({"error": "Name, email, and password are required"}), 400
+    if len(password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters"}), 400
+    if role not in ("admin", "manager", "staff"):
+        role = "staff"
+
+    user_id, error = create_user(name, email, password, role, avatar_url)
+    if error:
+        return jsonify({"error": error}), 409
+
+    user = get_user_by_id(user_id)
+    token = create_token(user["id"], user["email"], user["role"])
+    return jsonify({"message": "Account created successfully", "token": token, "user": user}), 201
+
+
 def profile():
     user = get_user_by_id(request.user["user_id"])
     if not user:

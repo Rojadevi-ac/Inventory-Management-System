@@ -2,11 +2,14 @@ import { MdMenu, MdLogout, MdLightMode, MdDarkMode } from 'react-icons/md'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { useTheme } from '../hooks/useTheme'
+import { useLanguage } from '../context/LanguageContext'
 import Avatar from './Avatar'
+import LanguageSelector from './LanguageSelector'
 
 export default function Topbar({ onMenuClick, title }) {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
+  const { t } = useLanguage()
   const userRaw = localStorage.getItem('ims_user')
   const user = userRaw ? JSON.parse(userRaw) : null
 
@@ -20,7 +23,7 @@ export default function Topbar({ onMenuClick, title }) {
   return (
     <header className="h-16 bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm border-b border-slate-200 dark:border-white/5 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-20 transition-colors duration-200">
       {/* Left: Menu + Title */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 sm:gap-4">
         <button
           onClick={onMenuClick}
           className="lg:hidden p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 text-slate-500 dark:text-slate-400 transition-colors"
@@ -28,11 +31,14 @@ export default function Topbar({ onMenuClick, title }) {
         >
           <MdMenu size={22} />
         </button>
-        <h1 className="text-lg font-semibold text-slate-800 dark:text-white">{title}</h1>
+        <h1 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white truncate">{title}</h1>
       </div>
 
-      {/* Right: Theme Toggle + User + Logout */}
+      {/* Right: Language Selector + Theme Toggle + User + Logout */}
       <div className="flex items-center gap-2 sm:gap-3">
+        {/* 15-Language Selector Dropdown */}
+        <LanguageSelector />
+
         {/* Theme Toggle Button */}
         <button
           onClick={toggleTheme}
@@ -61,11 +67,11 @@ export default function Topbar({ onMenuClick, title }) {
         {/* Logout */}
         <button
           onClick={handleLogout}
-          title="Logout"
-          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-600 dark:text-rose-400 transition-all duration-200 text-sm font-medium"
+          title={t('logout', 'Sign Out')}
+          className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-600 dark:text-rose-400 transition-all duration-200 text-xs sm:text-sm font-medium"
         >
-          <MdLogout size={18} />
-          <span className="hidden sm:inline">Logout</span>
+          <MdLogout size={17} />
+          <span className="hidden md:inline">{t('logout', 'Sign Out')}</span>
         </button>
       </div>
     </header>

@@ -14,9 +14,11 @@ import ProductDetailModal from '../components/ProductDetailModal'
 import { productsAPI, categoriesAPI } from '../services/api'
 import { exportToExcel } from '../utils/excelExport'
 import { useAuth } from '../hooks/useAuth'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function ArchivedProducts() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const isAdmin = user?.role === 'admin'
 
   const [products, setProducts] = useState([])
@@ -163,7 +165,7 @@ export default function ArchivedProducts() {
       <div className="glass-card overflow-x-auto overflow-y-auto max-h-[calc(100vh-270px)] w-full mt-2 border border-slate-200 dark:border-white/10 rounded-2xl">
         {loading ? (
           <div className="flex justify-center py-16">
-            <LoadingSpinner size="lg" text="Loading archived products…" />
+            <LoadingSpinner module="archived" size="lg" text={t('loadingModule', 'Loading archived catalog…')} />
           </div>
         ) : products.length === 0 ? (
           <EmptyState
