@@ -11,12 +11,15 @@ import Pagination from '../components/Pagination'
 import { ordersAPI, productsAPI } from '../services/api'
 import { exportToExcel } from '../utils/excelExport'
 import { formatDateTime } from '../utils/formatDate'
+import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../context/LanguageContext'
 
 const EMPTY_FORM = { product_id: '', quantity: '' }
 
 export default function Orders() {
+  const { user } = useAuth()
   const { t } = useLanguage()
+  const canModify = user?.role !== 'viewer'
   const [orders, setOrders] = useState([])
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
@@ -183,13 +186,15 @@ export default function Orders() {
               <MdFileDownload size={18} /> Export Excel
             </button>
 
-            <button
-              id="add-order-btn"
-              onClick={() => setShowModal(true)}
-              className="btn-primary flex items-center gap-2 text-sm py-2.5"
-            >
-              <MdAdd size={18} /> Place Order
-            </button>
+            {canModify && (
+              <button
+                id="add-order-btn"
+                onClick={() => setShowModal(true)}
+                className="btn-primary flex items-center gap-2 text-sm py-2.5"
+              >
+                <MdAdd size={18} /> Place Order
+              </button>
+            )}
           </div>
         </div>
 

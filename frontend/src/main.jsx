@@ -6,6 +6,7 @@ import 'react-toastify/dist/ReactToastify.css'
 import './index.css'
 
 import { LanguageProvider } from './context/LanguageContext'
+import { TimezoneProvider } from './context/TimezoneContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -18,6 +19,7 @@ import Orders from './pages/Orders'
 import Suppliers from './pages/Suppliers'
 import SupplierIssues from './pages/SupplierIssues'
 import Staff from './pages/Staff'
+import Settings from './pages/Settings'
 
 // Initialize theme on boot
 const savedTheme = localStorage.getItem('ims_theme') || 'dark'
@@ -30,44 +32,47 @@ if (savedTheme === 'dark') {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <LanguageProvider>
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <Routes>
-          {/* Public routes — ONLY LOGIN */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Navigate to="/login" replace />} />
+      <TimezoneProvider>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <Routes>
+            {/* Public routes — ONLY LOGIN */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Navigate to="/login" replace />} />
 
-          {/* Protected routes — all authenticated users */}
-          <Route path="/dashboard"         element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/products"          element={<ProtectedRoute><Products /></ProtectedRoute>} />
-          <Route path="/categories"        element={<ProtectedRoute><Categories /></ProtectedRoute>} />
-          <Route path="/archived-products" element={<ProtectedRoute><ArchivedProducts /></ProtectedRoute>} />
-          <Route path="/inventory"         element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
-          <Route path="/purchases"         element={<ProtectedRoute><Purchases /></ProtectedRoute>} />
-          <Route path="/orders"            element={<ProtectedRoute><Orders /></ProtectedRoute>} />
-          <Route path="/supplier-issues"   element={<ProtectedRoute><SupplierIssues /></ProtectedRoute>} />
-          <Route path="/damages"           element={<Navigate to="/supplier-issues" replace />} />
-          <Route path="/suppliers"         element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
+            {/* Protected routes — all authenticated users */}
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
+            <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
+            <Route path="/archived-products" element={<ProtectedRoute><ArchivedProducts /></ProtectedRoute>} />
+            <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
+            <Route path="/purchases" element={<ProtectedRoute><Purchases /></ProtectedRoute>} />
+            <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+            <Route path="/supplier-issues" element={<ProtectedRoute><SupplierIssues /></ProtectedRoute>} />
+            <Route path="/damages" element={<Navigate to="/supplier-issues" replace />} />
+            <Route path="/suppliers" element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
 
-          {/* Admin + Manager only */}
-          <Route path="/staff"             element={<ProtectedRoute roles={['admin', 'manager']}><Staff /></ProtectedRoute>} />
+            {/* Admin + Manager only */}
+            <Route path="/staff" element={<ProtectedRoute roles={['admin', 'manager']}><Staff /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute roles={['admin', 'manager']}><Settings /></ProtectedRoute>} />
 
-          {/* Catch-all */}
-          <Route path="*"                  element={<Navigate to="/dashboard" replace />} />
-        </Routes>
+            {/* Catch-all */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
 
-        {/* Centered Toast Notifications */}
-        <ToastContainer
-          position="top-center"
-          autoClose={2500}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-        />
-      </BrowserRouter>
+          {/* Centered Toast Notifications */}
+          <ToastContainer
+            position="top-center"
+            autoClose={2500}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+          />
+        </BrowserRouter>
+      </TimezoneProvider>
     </LanguageProvider>
   </React.StrictMode>
 )

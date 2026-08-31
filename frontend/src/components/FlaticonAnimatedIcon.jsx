@@ -10,6 +10,7 @@
  * 8. Damaged Product (Damaged Box 18485006)
  * 9. Staffs (Team 18821835)
  * 10. Dashboard (Dashboard Gauge 15578463)
+ * 11. Settings (Time & Timezone Clock Settings)
  */
 export default function FlaticonAnimatedIcon({
   module = 'dashboard',
@@ -20,6 +21,31 @@ export default function FlaticonAnimatedIcon({
   const height = size
 
   switch (module) {
+    case 'settings':
+      // ⚙️ Time & Timezone Settings (Flaticon Animated Clock & Gear)
+      return (
+        <div className={`relative inline-flex items-center justify-center ${className}`} style={{ width, height }}>
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-md">
+            {/* Outer Animated Clock Ring */}
+            <circle cx="32" cy="32" r="22" fill="#6366f1" opacity="0.2" stroke="#6366f1" strokeWidth="3" />
+
+            {/* Sweeping Clock Hands */}
+            <g className="animate-spin origin-[32px_32px]" style={{ animationDuration: '6s', animationTimingFunction: 'linear' }}>
+              <path d="M32 32V18" stroke="#818cf8" strokeWidth="3.5" strokeLinecap="round" />
+              <path d="M32 32L40 40" stroke="#c084fc" strokeWidth="3" strokeLinecap="round" />
+            </g>
+
+            <circle cx="32" cy="32" r="3.5" fill="#a855f7" />
+
+            {/* Timezone Markers */}
+            <circle cx="32" cy="12" r="2" fill="#818cf8" />
+            <circle cx="32" cy="52" r="2" fill="#818cf8" />
+            <circle cx="12" cy="32" r="2" fill="#818cf8" />
+            <circle cx="52" cy="32" r="2" fill="#818cf8" />
+          </svg>
+        </div>
+      )
+
     case 'dashboard':
       // 📊 Dashboard Gauge (Flaticon 15578463)
       return (

@@ -43,6 +43,10 @@ def token_required(roles=None):
             except jwt.InvalidTokenError:
                 return jsonify({"error": "Invalid token"}), 401
 
+            # Strictly enforce read-only access for viewer role on all modification requests
+            if payload.get("role") == "viewer" and request.method in ["POST", "PUT", "DELETE", "PATCH"]:
+                return jsonify({"error": "Read-only viewer account (imsuser). No CRUD operations permitted."}), 403
+
             if roles and payload.get("role") not in roles:
                 return jsonify({"error": "Insufficient permissions"}), 403
 

@@ -1,17 +1,31 @@
+from datetime import datetime, date
 from config.db import get_connection
+from utils.timezone import get_ist_now
+
+
+def _format_log(log):
+    if not log:
+        return log
+    for k, v in list(log.items()):
+        if isinstance(v, (datetime, date)) or hasattr(v, "isoformat"):
+            log[k] = v.isoformat()
+        elif hasattr(v, "as_tuple"):
+            log[k] = float(v)
+    return log
 
 
 def record_log(cursor, product_id, action_type, user_id=None, quantity=None,
                previous_stock=None, new_stock=None, details=None):
     """
-    Record a product status/audit log entry.
+    Record a product status/audit log entry with exact IST timestamp.
     Must be called with an active cursor inside a transaction.
     """
+    now_str = get_ist_now()
     cursor.execute(
         """INSERT INTO product_logs (product_id, user_id, action_type, quantity,
-                                    previous_stock, new_stock, details)
-           VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-        (product_id, user_id, action_type, quantity, previous_stock, new_stock, details),
+                                    previous_stock, new_stock, details, created_at)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+        (product_id, user_id, action_type, quantity, previous_stock, new_stock, details, now_str),
     )
 
 
@@ -36,21 +50,21 @@ def get_product_logs(product_id, action_type=None, user_id=None, page=1, per_pag
             offset = (page - 1) * per_page
 
             cursor.execute(f"SELECT COUNT(*) AS total FROM product_logs pl {where}", params)
-            total = cursor.fetchone()["total"]
+            total = int(cursor.fetchone()["total"])
 
             cursor.execute(
                 f"""SELECT pl.*, p.name AS product_name, p.sku, p.image_url,
                            u.name AS user_name, u.email AS user_email,
                            u.role AS user_role, u.avatar_url AS user_avatar
                     FROM product_logs pl
-                    JOIN products p ON pl.product_id = p.id
+                    LEFT JOIN products p ON pl.product_id = p.id
                     LEFT JOIN users u ON pl.user_id = u.id
                     {where}
                     ORDER BY pl.created_at DESC
                     LIMIT %s OFFSET %s""",
                 params + [per_page, offset],
             )
-            logs = cursor.fetchall()
+            logs = [_format_log(log) for log in cursor.fetchall()]
             return logs, total, None
     except Exception as e:
         return [], 0, str(e)
@@ -94,26 +108,26 @@ def get_all_logs(product_id=None, action_type=None, user_id=None,
 
             cursor.execute(
                 f"""SELECT COUNT(*) AS total FROM product_logs pl
-                    JOIN products p ON pl.product_id = p.id
+                    LEFT JOIN products p ON pl.product_id = p.id
                     LEFT JOIN users u ON pl.user_id = u.id
                     {where}""",
                 params,
             )
-            total = cursor.fetchone()["total"]
+            total = int(cursor.fetchone()["total"])
 
             cursor.execute(
                 f"""SELECT pl.*, p.name AS product_name, p.sku, p.image_url,
                            u.name AS user_name, u.email AS user_email,
                            u.role AS user_role, u.avatar_url AS user_avatar
                     FROM product_logs pl
-                    JOIN products p ON pl.product_id = p.id
+                    LEFT JOIN products p ON pl.product_id = p.id
                     LEFT JOIN users u ON pl.user_id = u.id
                     {where}
                     ORDER BY pl.created_at DESC
                     LIMIT %s OFFSET %s""",
                 params + [per_page, offset],
             )
-            logs = cursor.fetchall()
+            logs = [_format_log(log) for log in cursor.fetchall()]
             return logs, total, None
     except Exception as e:
         return [], 0, str(e)

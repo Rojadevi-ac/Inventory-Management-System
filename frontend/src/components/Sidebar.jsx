@@ -2,21 +2,22 @@ import { NavLink } from 'react-router-dom'
 import {
   MdDashboard, MdInventory, MdCategory, MdStore, MdAddShoppingCart,
   MdShoppingCart, MdLocalShipping, MdPeople, MdArchive, MdClose,
-  MdChevronLeft, MdChevronRight, MdReportProblem
+  MdChevronLeft, MdChevronRight, MdReportProblem, MdPublic
 } from 'react-icons/md'
+import FlaticonAnimatedIcon from './FlaticonAnimatedIcon'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../context/LanguageContext'
 
 const baseNavItems = [
-  { to: '/dashboard',         key: 'dashboard',         fallback: 'Dashboard',             Icon: MdDashboard },
-  { to: '/products',          key: 'products',          fallback: 'Products',              Icon: MdInventory },
-  { to: '/categories',        key: 'categories',        fallback: 'Categories',            Icon: MdCategory },
-  { to: '/inventory',         key: 'inventory',         fallback: 'Inventory',             Icon: MdStore },
-  { to: '/purchases',         key: 'purchases',         fallback: 'Purchases',             Icon: MdAddShoppingCart },
-  { to: '/orders',            key: 'orders',            fallback: 'Orders',                Icon: MdShoppingCart },
-  { to: '/supplier-issues',   key: 'supplierIssues',    fallback: 'Damages & Issues',      Icon: MdReportProblem },
-  { to: '/suppliers',         key: 'suppliers',         fallback: 'Suppliers',             Icon: MdLocalShipping },
-  { to: '/archived-products', key: 'archivedProducts',  fallback: 'Archived Products',     Icon: MdArchive },
+  { to: '/dashboard',         key: 'dashboard',         fallback: 'Dashboard',             Icon: MdDashboard,       module: 'dashboard' },
+  { to: '/products',          key: 'products',          fallback: 'Products',              Icon: MdInventory,       module: 'products' },
+  { to: '/categories',        key: 'categories',        fallback: 'Categories',            Icon: MdCategory,        module: 'categories' },
+  { to: '/inventory',         key: 'inventory',         fallback: 'Inventory',             Icon: MdStore,           module: 'inventory' },
+  { to: '/purchases',         key: 'purchases',         fallback: 'Purchases',              Icon: MdAddShoppingCart, module: 'purchases' },
+  { to: '/orders',            key: 'orders',            fallback: 'Orders',                Icon: MdShoppingCart,    module: 'orders' },
+  { to: '/supplier-issues',   key: 'supplierIssues',    fallback: 'Damages & Issues',      Icon: MdReportProblem,   module: 'damages' },
+  { to: '/suppliers',         key: 'suppliers',         fallback: 'Suppliers',             Icon: MdLocalShipping,   module: 'suppliers' },
+  { to: '/archived-products', key: 'archivedProducts',  fallback: 'Archived Products',     Icon: MdArchive,         module: 'archived' },
 ]
 
 export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }) {
@@ -26,9 +27,12 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }) 
 
   const navItems = [
     ...baseNavItems,
-    // Staff management: visible to admin and manager
+    // Staff & Admin Settings management: visible to admin and manager
     ...(role === 'admin' || role === 'manager'
-      ? [{ to: '/staff', key: 'staff', fallback: 'Staff', Icon: MdPeople }]
+      ? [
+          { to: '/staff', key: 'staff', fallback: 'Staff', Icon: MdPeople, module: 'staff' },
+          { to: '/settings', key: 'settings', fallback: 'Time & Timezone', Icon: MdPublic, module: 'settings' },
+        ]
       : []),
   ]
 
@@ -94,15 +98,16 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }) 
               ${role === 'admin' ? 'bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-500/30' : ''}
               ${role === 'manager' ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30' : ''}
               ${role === 'staff' ? 'bg-slate-100 dark:bg-slate-500/20 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-500/30' : ''}
+              ${role === 'viewer' ? 'bg-cyan-100 dark:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-500/30 font-bold' : ''}
             `}>
-              {role}
+              {role === 'viewer' ? 'Read-Only Viewer' : role}
             </span>
           </div>
         )}
 
         {/* Nav links */}
         <nav className={`flex-1 px-3 py-4 space-y-1.5 ${collapsed ? 'overflow-visible' : 'overflow-y-auto'}`}>
-          {navItems.map(({ to, key, fallback, Icon }) => {
+          {navItems.map(({ to, key, fallback, module }) => {
             const label = t(key, fallback)
             return (
               <div key={to} className="relative group/nav">
@@ -120,9 +125,10 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }) 
                 >
                   {({ isActive }) => (
                     <>
-                      <Icon
-                        size={20}
-                        className={`flex-shrink-0 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500 group-hover/nav:text-slate-700 dark:group-hover/nav:text-slate-300'}`}
+                      <FlaticonAnimatedIcon
+                        module={module}
+                        size={22}
+                        className={`flex-shrink-0 ${isActive ? 'scale-110' : 'opacity-80 group-hover/nav:opacity-100'} transition-transform duration-200`}
                       />
                       {!collapsed && <span className="truncate">{label}</span>}
                     </>

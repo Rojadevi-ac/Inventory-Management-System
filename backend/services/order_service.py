@@ -1,5 +1,6 @@
 from config.db import get_connection
 from services.log_service import record_log
+from utils.timezone import get_ist_now
 
 
 def _format_order(o):
@@ -19,10 +20,11 @@ def _format_order(o):
 
 
 def _log_transaction(cursor, product_id, txn_type, quantity, reference_id=None):
+    now_str = get_ist_now()
     cursor.execute(
-        """INSERT INTO transactions (product_id, type, quantity, reference_id)
-           VALUES (%s, %s, %s, %s)""",
-        (product_id, txn_type, quantity, reference_id),
+        """INSERT INTO transactions (product_id, type, quantity, transaction_date, reference_id)
+           VALUES (%s, %s, %s, %s, %s)""",
+        (product_id, txn_type, quantity, now_str, reference_id),
     )
 
 
@@ -52,10 +54,11 @@ def place_order(product_id, quantity, user_id):
 
             new_stock = prev_stock - quantity
 
+            now_str = get_ist_now()
             cursor.execute(
-                """INSERT INTO orders (product_id, quantity, created_by)
-                   VALUES (%s, %s, %s)""",
-                (product_id, quantity, user_id),
+                """INSERT INTO orders (product_id, quantity, order_date, created_by)
+                   VALUES (%s, %s, %s, %s)""",
+                (product_id, quantity, now_str, user_id),
             )
             order_id = cursor.lastrowid
 

@@ -22,16 +22,20 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// Handle auth errors globally
+// Handle auth errors globally (ignore 401 on login endpoint/page to prevent infinite buffering reload)
 api.interceptors.response.use(
   (response) => response,
 
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('ims_token')
-      localStorage.removeItem('ims_user')
+      const isLoginRequest = error.config?.url?.includes('/auth/login')
+      const isLoginPage = window.location.pathname.includes('/login')
 
-      window.location.href = '/login'
+      if (!isLoginRequest && !isLoginPage) {
+        localStorage.removeItem('ims_token')
+        localStorage.removeItem('ims_user')
+        window.location.href = '/login'
+      }
     }
 
     return Promise.reject(error)
@@ -64,6 +68,16 @@ export const authAPI = {
   register: (data) => api.post('/auth/register', data),
 
   profile: () => api.get('/auth/profile'),
+}
+
+// ── Admin Settings & Global Timezone ─────────────────────────────────────────
+export const adminAPI = {
+  getTimezone: () => api.get('/admin/timezone'),
+  updateTimezone: (data) => {
+    clearAPICache()
+    return api.put('/admin/timezone', data)
+  },
+  getCurrentTime: () => api.get('/admin/current-time'),
 }
 
 // ── Staff Management ─────────────────────────────────────────────────────────

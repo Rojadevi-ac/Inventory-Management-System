@@ -472,13 +472,15 @@ export default function SupplierIssues() {
               <MdFileDownload size={18} /> Export Excel
             </button>
 
-            <button
-              id="report-issue-btn"
-              onClick={() => { setForm(EMPTY_FORM); setDamageSummary(null); setShowCreateModal(true) }}
-              className="btn-primary flex items-center gap-2 text-sm py-2.5"
-            >
-              <MdAdd size={18} /> Report Damage / Issue
-            </button>
+            {canModify && (
+              <button
+                id="report-issue-btn"
+                onClick={() => { setForm(EMPTY_FORM); setDamageSummary(null); setShowCreateModal(true) }}
+                className="btn-primary flex items-center gap-2 text-sm py-2.5"
+              >
+                <MdAdd size={18} /> Report Damage / Issue
+              </button>
+            )}
           </div>
         </div>
 

@@ -11,12 +11,15 @@ import Pagination from '../components/Pagination'
 import { purchasesAPI, productsAPI, suppliersAPI } from '../services/api'
 import { exportToExcel } from '../utils/excelExport'
 import { formatDateTime } from '../utils/formatDate'
+import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../context/LanguageContext'
 
 const EMPTY_FORM = { product_id: '', quantity: '', supplier_id: '' }
 
 export default function Purchases() {
+  const { user } = useAuth()
   const { t } = useLanguage()
+  const canModify = user?.role !== 'viewer'
   const [purchases, setPurchases] = useState([])
   const [total, setTotal] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
@@ -213,13 +216,15 @@ export default function Purchases() {
               <MdFileDownload size={18} /> Export Excel
             </button>
 
-            <button
-              id="add-purchase-btn"
-              onClick={() => setShowModal(true)}
-              className="btn-primary flex items-center gap-2 text-sm py-2.5"
-            >
-              <MdAdd size={18} /> Record Purchase
-            </button>
+            {canModify && (
+              <button
+                id="add-purchase-btn"
+                onClick={() => setShowModal(true)}
+                className="btn-primary flex items-center gap-2 text-sm py-2.5"
+              >
+                <MdAdd size={18} /> Record Purchase
+              </button>
+            )}
           </div>
         </div>
 

@@ -55,6 +55,7 @@ try:
             ("Priya",  "priya@ims.com",  hash_pw("Staff@123"),  "staff",   "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80"),
             ("Savitha","savitha@ims.com",hash_pw("Staff@123"),  "staff",   "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&q=80"),
             ("Beula",  "beula@ims.com",  hash_pw("Staff@123"),  "staff",   "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80"),
+            ("imsuser","imsuser@ims.com",hash_pw("qwerty123"),  "viewer",  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80"),
         ]
         cur.executemany(
             "INSERT INTO users (name, email, password, role, avatar_url) VALUES (%s, %s, %s, %s, %s)",

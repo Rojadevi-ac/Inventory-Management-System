@@ -22,20 +22,21 @@ def get_dashboard_stats():
     }
 
 
-def get_transactions(txn_type=None, date_from=None, date_to=None, page=1, per_page=10):
+def get_transactions(txn_type=None, date_from=None, date_to=None, page=1, per_page=50):
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
-            # Combine transactions table with purchases (IN) and orders (OUT) for complete audit trail
+            # Combine purchases (IN), orders (OUT), and standalone transactions without duplicates
             union_query = """
-                SELECT id, product_id, 'IN' AS type, quantity, created_at AS transaction_date
-                FROM purchases
+                SELECT pu.id, pu.product_id, 'IN' AS type, pu.quantity, pu.purchase_date AS transaction_date
+                FROM purchases pu
                 UNION ALL
-                SELECT id, product_id, 'OUT' AS type, quantity, created_at AS transaction_date
-                FROM orders
+                SELECT o.id, o.product_id, 'OUT' AS type, o.quantity, o.order_date AS transaction_date
+                FROM orders o
                 UNION ALL
-                SELECT id, product_id, type, quantity, transaction_date
-                FROM transactions
+                SELECT t.id, t.product_id, t.type, t.quantity, t.transaction_date
+                FROM transactions t
+                WHERE t.reference_id IS NULL
             """
 
             conditions = []
@@ -62,9 +63,11 @@ def get_transactions(txn_type=None, date_from=None, date_to=None, page=1, per_pa
             total = int(res["total"]) if res and res.get("total") is not None else 0
 
             cursor.execute(
-                f"""SELECT combined.*, p.name AS product_name, p.sku
+                f"""SELECT combined.*,
+                           COALESCE(p.name, 'Product Item') AS product_name,
+                           COALESCE(p.sku, 'N/A') AS sku
                     FROM ({union_query}) AS combined
-                    JOIN products p ON combined.product_id = p.id
+                    LEFT JOIN products p ON combined.product_id = p.id
                     {where}
                     ORDER BY combined.transaction_date DESC
                     LIMIT %s OFFSET %s""",

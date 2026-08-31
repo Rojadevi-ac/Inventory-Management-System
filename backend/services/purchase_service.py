@@ -1,5 +1,6 @@
 from config.db import get_connection
 from services.log_service import record_log
+from utils.timezone import get_ist_now
 
 
 def _format_purchase(pu):
@@ -19,10 +20,11 @@ def _format_purchase(pu):
 
 
 def _log_transaction(cursor, product_id, txn_type, quantity, reference_id=None):
+    now_str = get_ist_now()
     cursor.execute(
-        """INSERT INTO transactions (product_id, type, quantity, reference_id)
-           VALUES (%s, %s, %s, %s)""",
-        (product_id, txn_type, quantity, reference_id),
+        """INSERT INTO transactions (product_id, type, quantity, transaction_date, reference_id)
+           VALUES (%s, %s, %s, %s, %s)""",
+        (product_id, txn_type, quantity, now_str, reference_id),
     )
 
 
@@ -53,10 +55,11 @@ def add_purchase(product_id, quantity, supplier_id, user_id):
             prev_stock = inv["quantity"] if inv else 0
             new_stock = prev_stock + quantity
 
+            now_str = get_ist_now()
             cursor.execute(
-                """INSERT INTO purchases (product_id, quantity, supplier_id, created_by)
-                   VALUES (%s, %s, %s, %s)""",
-                (product_id, quantity, supplier_id, user_id),
+                """INSERT INTO purchases (product_id, quantity, supplier_id, purchase_date, created_by)
+                   VALUES (%s, %s, %s, %s, %s)""",
+                (product_id, quantity, supplier_id, now_str, user_id),
             )
             purchase_id = cursor.lastrowid
 

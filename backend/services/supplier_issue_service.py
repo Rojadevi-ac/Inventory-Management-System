@@ -2,6 +2,7 @@ import random
 from datetime import datetime
 from config.db import get_connection
 from services.log_service import record_log
+from utils.timezone import get_ist_now
 
 
 def _format_dict(d):
@@ -124,14 +125,16 @@ def create_supplier_issue(supplier_id, purchase_id, product_id, quantity,
 
             # 3. Create Issue
             issue_number = _generate_issue_number(cursor)
+            now_str = get_ist_now()
+
             cursor.execute(
                 """INSERT INTO supplier_issues (
                     issue_number, supplier_id, purchase_id, product_id,
                     quantity, issue_type, reason, status, notes, deduct_inventory,
-                    created_by
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, 'Reported', %s, %s, %s)""",
+                    issue_date, created_by
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, 'Reported', %s, %s, %s, %s)""",
                 (issue_number, supplier_id, purchase_id, product_id,
-                 quantity, issue_type, reason, notes, deduct_inventory, user_id),
+                 quantity, issue_type, reason, notes, deduct_inventory, now_str, user_id),
             )
             issue_id = cursor.lastrowid
 
@@ -156,9 +159,9 @@ def create_supplier_issue(supplier_id, purchase_id, product_id, quantity,
 
                 # Record stock movement transaction
                 cursor.execute(
-                    """INSERT INTO transactions (product_id, type, quantity, reference_id)
-                       VALUES (%s, 'OUT', %s, %s)""",
-                    (product_id, quantity, issue_id),
+                    """INSERT INTO transactions (product_id, type, quantity, transaction_date, reference_id)
+                       VALUES (%s, 'OUT', %s, %s, %s)""",
+                    (product_id, quantity, now_str, issue_id),
                 )
 
                 # Record audit log
@@ -198,6 +201,8 @@ def update_supplier_issue_status(issue_id, status, resolution=None, notes=None, 
             if not issue:
                 return None, "Supplier issue not found"
 
+            now_str = get_ist_now()
+
             # If issue was Rejected and inventory was previously deducted, restore inventory
             if status == "Rejected" and issue["inventory_deducted"] and issue["status"] != "Rejected":
                 cursor.execute(
@@ -209,9 +214,9 @@ def update_supplier_issue_status(issue_id, status, resolution=None, notes=None, 
                     (issue_id,),
                 )
                 cursor.execute(
-                    """INSERT INTO transactions (product_id, type, quantity, reference_id)
-                       VALUES (%s, 'IN', %s, %s)""",
-                    (issue["product_id"], issue["quantity"], issue_id),
+                    """INSERT INTO transactions (product_id, type, quantity, transaction_date, reference_id)
+                       VALUES (%s, 'IN', %s, %s, %s)""",
+                    (issue["product_id"], issue["quantity"], now_str, issue_id),
                 )
 
             # If status transitioned to Resolved, ensure resolution is noted
