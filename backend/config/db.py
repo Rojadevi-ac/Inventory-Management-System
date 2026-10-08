@@ -1,31 +1,79 @@
 import os
+import time
+import threading
+import urllib.parse
 import pymysql
 from pymysql.cursors import DictCursor
 from dotenv import load_dotenv
 
 load_dotenv()
 
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_USER = os.getenv("DB_USER", "root")
+DB_HOST = os.getenv("DB_HOST", "localhost").strip()
+DB_USER = os.getenv("DB_USER", "root").strip()
 DB_PASS = os.getenv("DB_PASSWORD", "")
-DB_NAME = os.getenv("DB_NAME", "ims_db")
+DB_NAME = os.getenv("DB_NAME", "ims_db").strip()
 DB_PORT = int(os.getenv("DB_PORT", 3306))
 
+# Parse DATABASE_URL / MYSQL_URL if provided
+MYSQL_URL = os.getenv("MYSQL_URL") or os.getenv("DATABASE_URL") or ""
+if MYSQL_URL and ("mysql" in MYSQL_URL or "://" in MYSQL_URL):
+    try:
+        parsed = urllib.parse.urlparse(MYSQL_URL)
+        if parsed.hostname:
+            DB_HOST = parsed.hostname
+        if parsed.username:
+            DB_USER = parsed.username
+        if parsed.password:
+            DB_PASS = parsed.password
+        if parsed.path and parsed.path.strip("/"):
+            DB_NAME = parsed.path.strip("/")
+        if parsed.port:
+            DB_PORT = int(parsed.port)
+    except Exception as parse_err:
+        print(f"[DB Config Warning] Failed to parse MYSQL_URL: {parse_err}")
 
-def get_connection():
-    return pymysql.connect(
-        host=DB_HOST,
-        user=DB_USER,
-        password=DB_PASS,
-        database=DB_NAME,
-        port=DB_PORT,
-        cursorclass=DictCursor,
-        autocommit=False,
-        connect_timeout=3,
-        read_timeout=5,
-        write_timeout=5,
-        init_command="SET time_zone = '+00:00'",
-    )
+# Clean DB_HOST if user pasted protocol prefix
+if "://" in DB_HOST:
+    DB_HOST = DB_HOST.split("://")[-1].split("/")[0].split(":")[0]
+
+# DB Auto-Wake & Keep-Alive Settings
+DB_KEEP_ALIVE_INTERVAL = int(os.getenv("DB_KEEP_ALIVE_INTERVAL", "600"))  # 10 minutes default
+
+
+def get_connection(max_retries=5, retry_delay=3):
+    """Establishes MySQL DB connection with automatic retry & backoff for serverless/cloud DBs."""
+    last_exception = None
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            connect_kwargs = {
+                "host": DB_HOST,
+                "user": DB_USER,
+                "password": DB_PASS,
+                "database": DB_NAME,
+                "port": DB_PORT,
+                "cursorclass": DictCursor,
+                "autocommit": False,
+                "connect_timeout": 15,
+                "read_timeout": 15,
+                "write_timeout": 15,
+                "init_command": "SET time_zone = '+00:00'",
+            }
+
+            # Enable SSL if DB_SSL=true or ssl mode is required
+            if os.getenv("DB_SSL") == "true" or "aivencloud.com" in DB_HOST:
+                connect_kwargs["ssl"] = {"ssl_mode": "REQUIRED"}
+
+            conn = pymysql.connect(**connect_kwargs)
+            return conn
+        except Exception as e:
+            last_exception = e
+            print(f"[DB Connection] Attempt {attempt}/{max_retries} failed on '{DB_HOST}:{DB_PORT}' ({e}). Retrying...")
+
+            if attempt < max_retries:
+                time.sleep(retry_delay)
+
+    raise last_exception
 
 
 def ensure_db_indexes():
@@ -96,8 +144,41 @@ def ensure_db_indexes():
         conn.close()
 
 
-# Run index and settings initialization check on module import
+# ---- Background Keep-Alive Heartbeat Ping Thread ---------------------------
+_keep_alive_started = False
+
+
+def _db_keep_alive_loop():
+    """Periodic background heartbeat thread sending SELECT 1 to prevent cloud DB inactivity poweroff."""
+    print(f"[DB Keep-Alive] Started background ping loop (Interval: {DB_KEEP_ALIVE_INTERVAL}s)")
+    while True:
+        try:
+            time.sleep(DB_KEEP_ALIVE_INTERVAL)
+            conn = get_connection(max_retries=3, retry_delay=2)
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT 1")
+                conn.close()
+                print("[DB Keep-Alive] Heartbeat ping successful.")
+            except Exception as pe:
+                conn.close()
+                print(f"[DB Keep-Alive Warning] Heartbeat query failed: {pe}")
+        except Exception as e:
+            print(f"[DB Keep-Alive Error] Heartbeat ping error: {e}")
+
+
+def start_db_keep_alive():
+    """Starts the background keep-alive thread if not already running."""
+    global _keep_alive_started
+    if not _keep_alive_started:
+        _keep_alive_started = True
+        thread = threading.Thread(target=_db_keep_alive_loop, daemon=True)
+        thread.start()
+
+
+# Initialize db indexes and start keep-alive thread on boot
 try:
     ensure_db_indexes()
-except Exception:
-    pass
+    start_db_keep_alive()
+except Exception as boot_err:
+    print(f"[DB Initialization Warning] {boot_err}")

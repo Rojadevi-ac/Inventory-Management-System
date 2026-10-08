@@ -1,6 +1,6 @@
 """
 Migration v2: Add categories table, product status/category_id, purchase search support.
-Safe for existing data — no drops, no truncations.
+Safe for existing data no drops, no truncations.
 Run once: python migrate_v2.py
 """
 import sys, os

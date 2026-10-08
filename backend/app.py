@@ -39,13 +39,45 @@ def create_app():
     app.register_blueprint(staff_bp)
     app.register_blueprint(admin_bp)
 
-    # Health check
+    # Health check & DB Status ping
     @app.route("/api/health", methods=["GET"])
     def health():
+        from config.db import get_connection
+        db_connected = False
+        try:
+            conn = get_connection(max_retries=2, retry_delay=1)
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT 1")
+            conn.close()
+            db_connected = True
+        except Exception:
+            db_connected = False
+
         return jsonify({
             "status": "ok",
-            "message": "IMS API is running"
+            "message": "IMS API is running",
+            "database_status": "connected" if db_connected else "disconnected",
         }), 200
+
+    # Explicit DB Status / Wakeup Trigger Endpoint
+    @app.route("/api/wake-db", methods=["GET", "POST"])
+    def wake_db():
+        from config.db import get_connection
+        try:
+            conn = get_connection(max_retries=3, retry_delay=2)
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT 1")
+            conn.close()
+            return jsonify({
+                "message": "Database is powered on and connected",
+                "database_status": "connected"
+            }), 200
+        except Exception as e:
+            return jsonify({
+                "message": "Database connection attempt in progress...",
+                "database_status": "connecting",
+                "details": str(e)
+            }), 202
 
     # 404 handler
     @app.errorhandler(404)
