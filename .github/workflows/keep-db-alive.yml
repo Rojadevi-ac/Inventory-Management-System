@@ -1,0 +1,123 @@
+name: Aiven DB Keep-Alive & Auto Power-On Cron Job
+
+on:
+  schedule:
+    # Run every 30 minutes to prevent Aiven free tier MySQL inactivity power-off
+    - cron: '*/30 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+jobs:
+  keep-alive:
+    name: Ping Aiven Database & Auto Power-On
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pymysql requests
+
+      - name: Wake Up & Ping Aiven MySQL Database
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          AIVEN_API_TOKEN: ${{ secrets.AIVEN_API_TOKEN }}
+          AIVEN_PROJECT_NAME: ${{ secrets.AIVEN_PROJECT_NAME }}
+          AIVEN_SERVICE_NAME: ${{ secrets.AIVEN_SERVICE_NAME }}
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+        run: |
+          python - << 'EOF'
+          import os, time, sys, pymysql, requests
+
+          db_host = os.getenv("DB_HOST", "").strip()
+          db_user = os.getenv("DB_USER", "avnadmin").strip()
+          db_pass = os.getenv("DB_PASSWORD", "").strip()
+          db_name = os.getenv("DB_NAME", "defaultdb").strip()
+          db_port_str = os.getenv("DB_PORT", "11425").strip()
+          db_port = int(db_port_str) if db_port_str.isdigit() else 11425
+
+          token = os.getenv("AIVEN_API_TOKEN", "").strip()
+          project = os.getenv("AIVEN_PROJECT_NAME", "").strip()
+          service = os.getenv("AIVEN_SERVICE_NAME", "").strip()
+          backend_url = os.getenv("BACKEND_URL", "").strip()
+
+          print("==========================================================")
+          print("  AIVEN MYSQL AUTO POWER-ON & KEEP-ALIVE CRON WORKFLOW    ")
+          print("==========================================================")
+
+          # 1. Trigger Aiven REST API Power-On if credentials are configured
+          if token and project and service:
+              print(f"[1/3] Sending Aiven API power-on signal for service '{service}'...")
+              try:
+                  url = f"https://api.aiven.io/v1/project/{project}/service/{service}"
+                  headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+                  resp = requests.put(url, json={"powered": True}, headers=headers, timeout=15)
+                  print(f"      Aiven API Response Code: {resp.status_code}")
+              except Exception as e:
+                  print(f"      [Warning] Aiven API Power-On Exception: {e}")
+          else:
+              print("[1/3] AIVEN_API_TOKEN/PROJECT/SERVICE not provided in Secrets. Skipping REST API power-on.")
+
+          # 2. Ping Deployed Backend API Endpoint if configured
+          if backend_url:
+              health_url = backend_url.rstrip("/") + "/api/health"
+              print(f"[2/3] Pinging backend API health endpoint at '{health_url}'...")
+              try:
+                  r = requests.get(health_url, timeout=20)
+                  print(f"      Backend API Status Code: {r.status_code}")
+              except Exception as e:
+                  print(f"      [Warning] Backend API Ping Exception: {e}")
+          else:
+              print("[2/3] BACKEND_URL not provided in Secrets. Skipping HTTP health ping.")
+
+          # 3. Direct Connection Retry to MySQL to power-on & ping instance
+          if db_host and db_pass:
+              print(f"[3/3] Connecting directly to MySQL at '{db_host}:{db_port}'...")
+              connected = False
+              for attempt in range(1, 6):
+                  try:
+                      connect_kwargs = {
+                          "host": db_host,
+                          "user": db_user,
+                          "password": db_pass,
+                          "database": db_name,
+                          "port": db_port,
+                          "connect_timeout": 15,
+                          "autocommit": True,
+                      }
+                      if "aivencloud" in db_host:
+                          connect_kwargs["ssl"] = {"ssl_mode": "REQUIRED"}
+
+                      conn = pymysql.connect(**connect_kwargs)
+                      with conn.cursor() as cur:
+                          cur.execute("SELECT 1")
+                          row = cur.fetchone()
+                          print(f"      [SUCCESS] MySQL ping successful on attempt {attempt}/5! Result: {row}")
+                      conn.close()
+                      connected = True
+                      break
+                  except Exception as err:
+                      print(f"      [Attempt {attempt}/5] Connection pending ({err}). Retrying in 5 seconds...")
+                      time.sleep(5)
+
+              if not connected:
+                  print("      [ERROR] Could not connect to MySQL instance after 5 attempts.")
+                  sys.exit(1)
+          else:
+              print("[3/3] DB_HOST or DB_PASSWORD not configured in Secrets. Skipping MySQL ping.")
+
+          print("==========================================================")
+          print("  AIVEN DB KEEP-ALIVE COMPLETED SUCCESSFULLY              ")
+          print("==========================================================")
+          EOF
