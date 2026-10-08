@@ -44,8 +44,8 @@ jobs:
           db_user = os.getenv("DB_USER", "avnadmin").strip()
           db_pass = os.getenv("DB_PASSWORD", "").strip()
           db_name = os.getenv("DB_NAME", "defaultdb").strip()
-          db_port_str = os.getenv("DB_PORT", "11425").strip()
-          db_port = int(db_port_str) if db_port_str.isdigit() else 11425
+          db_port_str = os.getenv("DB_PORT", "11883").strip()
+          db_port = int(db_port_str) if db_port_str.isdigit() else 11883
 
           token = os.getenv("AIVEN_API_TOKEN", "").strip()
           project = os.getenv("AIVEN_PROJECT_NAME", "").strip()
