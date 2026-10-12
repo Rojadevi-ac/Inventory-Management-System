@@ -1,12 +1,31 @@
 ```yaml
-name: YAML Test
+name: Wake Aiven MySQL
 
 'on':
   workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"
 
 jobs:
-  test:
+  wake-db:
     runs-on: ubuntu-latest
+
     steps:
-      - run: echo "YAML works"
+      - name: Install Aiven CLI
+        run: pip install aiven-client
+
+      - name: Power on MySQL
+        env:
+          AVN_AUTH_TOKEN: ${{ secrets.AIVEN_API_TOKEN }}
+        run: |
+          avn service update ims \
+            --project acrojadevi \
+            --power-on
+
+      - name: Wait for MySQL
+        env:
+          AVN_AUTH_TOKEN: ${{ secrets.AIVEN_API_TOKEN }}
+        run: |
+          avn service wait ims \
+            --project acrojadevi
 ```
