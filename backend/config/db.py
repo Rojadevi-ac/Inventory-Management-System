@@ -61,7 +61,7 @@ def get_connection(max_retries=5, retry_delay=3):
             }
 
             # Enable SSL if DB_SSL=true or ssl mode is required
-            if os.getenv("DB_SSL") == "true" or "aivencloud.com" in DB_HOST:
+            if os.getenv("DB_SSL") == "true" or "aivencloud.com" in DB_HOST or "tidbcloud.com" in DB_HOST:
                 connect_kwargs["ssl"] = {"ssl_mode": "REQUIRED"}
 
             conn = pymysql.connect(**connect_kwargs)
