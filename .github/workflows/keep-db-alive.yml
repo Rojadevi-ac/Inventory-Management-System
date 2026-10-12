@@ -1,8 +1,8 @@
+```yaml
 name: Wake Aiven MySQL
 
-on:
+'on':
   workflow_dispatch:
-
   schedule:
     - cron: "0 */6 * * *"
 
@@ -16,15 +16,16 @@ jobs:
 
       - name: Power on MySQL
         env:
-          AIVEN_AUTH_TOKEN: ${{ secrets.AIVEN_API_TOKEN }}
+          AVN_AUTH_TOKEN: ${{ secrets.AIVEN_API_TOKEN }}
         run: |
-          avn service update mysql-3b347bbd \
-            --project rojadevi08-86a4 \
+          avn service update ims \
+            --project acrojadevi \
             --power-on
 
       - name: Wait for MySQL
         env:
-          AIVEN_AUTH_TOKEN: ${{ secrets.AIVEN_API_TOKEN }}
+          AVN_AUTH_TOKEN: ${{ secrets.AIVEN_API_TOKEN }}
         run: |
-          avn service wait mysql-3b347bbd \
-            --project rojadevi08-86a4
+          avn service wait ims \
+            --project acrojadevi
+```
