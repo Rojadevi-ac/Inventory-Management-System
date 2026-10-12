@@ -1,17 +1,18 @@
 name: Start Aiven MySQL
 
 'on':
-  workflow_dispatch:
+workflow_dispatch:
 
 jobs:
-  start-db:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install Aiven CLI
-        run: pip install aiven-client
+start-db:
+runs-on: ubuntu-latest
+steps:
+- name: Install Aiven CLI
+run: pip install aiven-client
 
-      - name: Start MySQL service
-        env:
-          AVN_AUTH_TOKEN: ${{ secrets.AIVEN_API_TOKEN }}
-        run: |
-          avn service update ims --project acrojadevi --power-on
+```
+  - name: Start MySQL service
+    env:
+      AVN_AUTH_TOKEN: ${{ secrets.AIVEN_API_TOKEN }}
+    run: avn service update ims --project acrojadevi --power-on
+```
